@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Intelligent Campus Navigation Assistant</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand-icon">➤</div>
+
+    <div class="brand-copy">
+        <h1>Intelligent Campus Navigation Assistant</h1>
+        <p>
+            <span class="live-dot"></span>
+            VTU BCS515B Artificial Intelligence Mini Project |
+            Goal-Based Agent Architecture &amp; BFS Search
+        </p>
+    </div>
+
+    <div class="phase-badge">⚙ Phase 1 Demonstration Engine</div>
+</header>
+
+
+<main class="dashboard">
+
+    <section class="left-column">
+
+        <article class="panel">
+            <div class="panel-heading">
+                <span class="heading-icon blue">◎</span>
+                <h2>Navigation Controls</h2>
+            </div>
+
+            <div class="divider"></div>
+
+            <label for="source">SOURCE LOCATION (START NODE)</label>
+
+            <select id="source">
+                {% for node in nodes %}
+                <option value="{{ node.id }}"
+                    {% if node.id == 'MG' %}selected{% endif %}>
+                    {{ node.name }} ({{ node.id }})
+                </option>
+                {% endfor %}
+            </select>
+
+            <label for="goal">DESTINATION LOCATION (GOAL NODE)</label>
+
+            <select id="goal">
+                {% for node in nodes %}
+                <option value="{{ node.id }}"
+                    {% if node.id == 'BH' %}selected{% endif %}>
+                    {{ node.name }} ({{ node.id }})
+                </option>
+                {% endfor %}
+            </select>
+
+            <div class="button-row">
+                <button class="btn btn-primary" id="findRoute">
+                    ▷ Find Route
+                </button>
+
+                <button class="btn btn-secondary" id="simulate">
+                    ♧ Step Simulation
+                </button>
+
+                <button class="btn btn-muted" id="reset">
+                    ↻ Reset
+                </button>
+            </div>
+
+            <p id="notice" class="notice">
+                Select your locations to begin.
+            </p>
+        </article>
+
+
+        <article class="panel">
+
+            <div class="panel-heading">
+                <span class="heading-icon purple">♙</span>
+                <h2>AI Agent Architecture State</h2>
+                <span class="status-pill" id="goalStatus">READY</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="state-grid">
+
+                <div class="state-card">
+                    <h3>🛰 Sensors (Input)</h3>
+                    <p>
+                        Start: <strong id="startText">Main Gate</strong>
+                        <br>
+                        Goal:
+                        <strong id="goalText" class="goal-text">
+                            Boys Hostel
+                        </strong>
+                    </p>
+                </div>
+
+                <div class="state-card">
+                    <h3>🎯 Goal Test</h3>
+                    <p id="goalTest">Waiting for search...</p>
+                </div>
+
+            </div>
+
+            <div class="queue-card">
+                <div class="queue-heading">
+                    <span>FRONTIER QUEUE (FIFO)</span>
+                    <small>Size: <b id="queueSize">0</b></small>
+                </div>
+
+                <div class="queue-output" id="queueOutput">
+                    [ Select Find Route to start BFS ]
+                </div>
+            </div>
+
+            <div class="visited-card">
+                <div class="queue-heading">
+                    <span>EXPLORED NODES</span>
+                    <small id="exploredCount">0 locations</small>
+                </div>
+
+                <div id="visitedNodes" class="chips">
+                    <span class="empty-chip">Waiting for search</span>
+                </div>
+            </div>
+
+        </article>
+
+    </section>
+
+
+    <section class="right-column">
+
+        <article class="panel graph-panel">
+
+            <div class="panel-heading graph-heading">
+                <div class="heading-title">
+                    <span class="heading-icon purple">♧</span>
+                    <h2>Interactive Campus Node Graph Visualizer</h2>
+                </div>
+
+                <div class="legend">
+                    <span><i class="dot source-dot"></i> Source</span>
+                    <span><i class="dot goal-dot"></i> Goal</span>
+                    <span><i class="dot path-dot"></i> Optimal Path</span>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="graph-wrap">
+                <svg id="campusGraph"
+                     viewBox="0 0 820 500"
+                     role="img"
+                     aria-label="Interactive campus graph">
+                </svg>
+
+                <div class="graph-tip">
+                    ⓘ Click any node to select it as the destination
+                </div>
+            </div>
+
+        </article>
+
+
+        <article class="panel">
+
+            <div class="panel-heading">
+                <span class="heading-icon green">⌁</span>
+                <h2>Path Analytics &amp; Step-by-Step Directions</h2>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="metrics-grid">
+
+                <div class="metric-card">
+                    <span>TOTAL DISTANCE</span>
+                    <strong id="distanceMetric">
+                        -- <small>meters</small>
+                    </strong>
+                </div>
+
+                <div class="metric-card">
+                    <span>WALKING TIME</span>
+                    <strong id="timeMetric">
+                        -- <small>mins</small>
+                    </strong>
+                </div>
+
+                <div class="metric-card">
+                    <span>TOTAL HOPS</span>
+                    <strong id="hopsMetric">--</strong>
+                </div>
+
+                <div class="metric-card">
+                    <span>NODES VISITED</span>
+                    <strong id="nodesMetric">--</strong>
+                </div>
+
+            </div>
+
+            <div class="directions-title">
+                YOUR ROUTE
+                <span id="routeLabel">No route calculated</span>
+            </div>
+
+            <div id="directions" class="directions-list">
+                <div class="empty-state">
+                    Route directions will appear here.
+                </div>
+            </div>
+
+            <p class="footnote">
+                BFS minimizes the number of connections, not necessarily
+                total distance. Walking time assumes 75 metres per minute.
+            </p>
+
+        </article>
+
+    </section>
+
+</main>
+
+<footer>
+    VTU BCS515B • INTELLIGENT AGENT SYSTEMS • BFS UNINFORMED SEARCH
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
